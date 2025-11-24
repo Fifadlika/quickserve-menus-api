@@ -1,0 +1,43 @@
+services:
+  mysql-dev:
+    image: mysql:8.0
+    container_name: mysql-dev
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - quickserve-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  quickserve-app:
+    build: .
+    container_name: quickserve-app
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+    depends_on:
+      mysql-dev:
+        condition: service_healthy
+    networks:
+      - quickserve-network
+
+volumes:
+  mysql-data:
+    external: true
+    name: quickserve_mysql-data
+
+networks:
+  quickserve-network:
+    driver: bridge
